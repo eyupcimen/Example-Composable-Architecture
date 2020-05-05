@@ -19,7 +19,8 @@ struct AppState: Equatable {
 }
 
 enum AppAction {
-    
+    case todoCheckBoxTapped(index: Int)
+    case todoTextFieldChanged(index: Int, text: String)
 }
 
 struct AppEnviroment {
@@ -28,9 +29,15 @@ struct AppEnviroment {
 let appReducer = Reducer<AppState, AppAction, AppEnviroment>{ state, action, enviroment in
     
     switch action {
-        
+    case .todoCheckBoxTapped(index: let index):
+        state.todos[index].isComplete.toggle()
+        return .none
+    case .todoTextFieldChanged(index: let index, text: let text):
+        state.todos[index].description = text
+        return .none
     }
 }
+.debug()
 
 struct ContentView: View {
     
@@ -45,16 +52,19 @@ struct ContentView: View {
                 
                 List{
                     
-                    ForEach(viewStore.todos) { todo in
+                    ForEach(Array(viewStore.todos.enumerated()), id :\.element.id) { index, todo in
                         
                         HStack {
-                            Button(action:{}) {
+                            Button(action:{viewStore.send(.todoCheckBoxTapped(index: index)) }) {
                                 Image(systemName: todo.isComplete ? "checkmark.square" : "square")
                             }
                             .buttonStyle(PlainButtonStyle())
                             TextField(
                                 "Untitled todo",
-                                text : .constant(todo.description)
+                                text : viewStore.binding(
+                                    get: {$0.todos[index].description},
+                                    send: {.todoTextFieldChanged(index:index, text:$0)}
+                                )
                             )
                         }
                         .foregroundColor(todo.isComplete ? .gray : nil)
